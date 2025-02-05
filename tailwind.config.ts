@@ -14,6 +14,16 @@ export default {
             },
             colors: {
                 'default-red': '#FF1B1C'
+            },
+            keyframes: {
+                bouncing: {
+                    '0%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.1)' },
+                    '100%': { transform: 'scale(1)' },
+                }
+            },
+            animation: {
+                bouncing: 'bouncing 0.3s ease-out 1',
             }
         }
     },
