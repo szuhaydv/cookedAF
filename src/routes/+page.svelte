@@ -3,6 +3,12 @@
     const validIngredients = new Set(["salmon", "rice", "broccoli", "garlic"]);
     let ingredients: string[] = $state([]);
     let currentlyAdding = $state("");
+
+    let input: any;
+    function handleFocus(e: any) {
+        input.focus();
+    }
+
     function handleInput(e: any) {
         const length =
             e.target.value.length < 2 ? "2" : e.target.value.length + 1;
@@ -37,9 +43,10 @@
             >The next recipe is <b class="font-bold">looking for you!</b></span
         >
     </h1>
-    <div
+    <button
         class="bg-white text-2xl border-8 border-black rounded-3xl h-48
         w-[40rem] px-8 py-8 flex flex-wrap gap-2"
+        onclick={handleFocus}
     >
         {#each ingredients as ingredient, index}
             <IngredientBubble
@@ -51,10 +58,11 @@
             onkeydown={handleInput}
             autofocus
             type="text"
-            class="focus:outline-none h-10 w-[2ch] bg-red-300"
+            class="focus:outline-none h-10 w-[2ch]"
             bind:value={currentlyAdding}
+            bind:this={input}
         />
-    </div>
+    </button>
     <button
         class="bg-default-red rounded-2xl border-[3px] border-black w-48 h-16 text-white font-inter italic text-4xl shadow-default shadow-slate-500 active:animate-bouncing"
         >Go!</button
