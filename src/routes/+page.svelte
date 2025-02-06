@@ -1,8 +1,23 @@
 <script lang="ts">
     import IngredientBubble from "$lib/components/IngredientBubble.svelte";
-    const validIngredients = new Set(["salmon", "rice", "broccoli", "garlic"]);
     let ingredients: string[] = $state([]);
     let currentlyAdding = $state("");
+    //let { data: validIngredients } = $props();
+    let validIngredients = ["also", "etc", "idk", "something"];
+
+    function binSearch(target: string) {
+        let left = 0;
+        let right = validIngredients.length - 1;
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const comparison = target.localeCompare(validIngredients[mid]);
+
+            if (comparison === 0) return mid;
+            if (comparison < 0) right = mid - 1;
+            else left = mid + 1;
+        }
+        return false;
+    }
 
     let input: any;
     function handleFocus(e: any) {
@@ -17,10 +32,12 @@
             const text = e.target.value;
             const words = text.trim().split(/\s+/);
             const lastWord = words[words.length - 1].toLowerCase();
-            ingredients.push(lastWord);
-            currentlyAdding = "";
-            e.preventDefault();
-            e.target.style.width = "2ch";
+            if (binSearch(lastWord)) {
+                ingredients.push(lastWord);
+                currentlyAdding = "";
+                e.preventDefault();
+                e.target.style.width = "2ch";
+            }
         } else if (e.code === "Backspace") {
             if (currentlyAdding === "") {
                 ingredients.pop();
