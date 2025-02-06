@@ -4,15 +4,26 @@
     let ingredients: string[] = $state([]);
     let currentlyAdding = $state("");
     function handleInput(e: any) {
-        e.target.style.width = e.target.value.length + "ch";
-        if (e.data === " ") {
+        const length =
+            e.target.value.length < 2 ? "2" : e.target.value.length + 1;
+        e.target.style.width = length + "ch";
+        if (e.code === "Space" || e.code === "Enter") {
             const text = e.target.value;
             const words = text.trim().split(/\s+/);
             const lastWord = words[words.length - 1].toLowerCase();
             ingredients.push(lastWord);
             currentlyAdding = "";
-            e.target.style.width = "1ch";
+            e.preventDefault();
+            e.target.style.width = "2ch";
+        } else if (e.code === "Backspace") {
+            if (currentlyAdding === "") {
+                ingredients.pop();
+            }
         }
+    }
+
+    function handleDelete(id: number) {
+        ingredients.splice(id, 1);
     }
 </script>
 
@@ -30,13 +41,17 @@
         class="bg-white text-2xl border-8 border-black rounded-3xl h-48
         w-[40rem] px-8 py-8 flex flex-wrap gap-2"
     >
-        {#each ingredients as ingredient}
-            <IngredientBubble {ingredient} />
+        {#each ingredients as ingredient, index}
+            <IngredientBubble
+                {ingredient}
+                handleDelete={() => handleDelete(index)}
+            />
         {/each}
         <input
-            oninput={handleInput}
+            onkeydown={handleInput}
+            autofocus
             type="text"
-            class="focus:outline-none h-10 w-[1ch]"
+            class="focus:outline-none h-10 w-[2ch] bg-red-300"
             bind:value={currentlyAdding}
         />
     </div>
