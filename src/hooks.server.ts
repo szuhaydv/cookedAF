@@ -1,13 +1,6 @@
-import type { ServerInit, Handle } from "@sveltejs/kit";
+import type { ServerInit } from "@sveltejs/kit";
 
-let ingredientData: any = null;
-
-export const handle: Handle = async ({ event, resolve }) => {
-    event.locals.ingredients = ingredientData;
-
-    const response = await resolve(event);
-    return response;
-};
+export let ingredientData = [];
 
 export const init: ServerInit = async () => {
     try {

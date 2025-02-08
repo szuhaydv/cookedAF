@@ -1,8 +1,6 @@
 import type { PageServerLoad } from './$types';
+import { ingredientData } from '../hooks.server';
 
-export const load: PageServerLoad = async (event) => {
-    const ingredients = event.locals.ingredients
-    return {
-        ingredients
-    };
+export const load: PageServerLoad = async () => {
+    return { ingredientData }
 };

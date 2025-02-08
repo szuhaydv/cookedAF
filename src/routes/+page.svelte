@@ -2,8 +2,8 @@
     import IngredientBubble from "$lib/components/IngredientBubble.svelte";
     let ingredients: string[] = $state([]);
     let currentlyAdding = $state("");
-    //let { data: validIngredients } = $props();
-    let validIngredients = ["also", "etc", "idk", "something"];
+    let { data } = $props();
+    const validIngredients = data.ingredientData;
 
     function binSearch(target: string) {
         let left = 0;
