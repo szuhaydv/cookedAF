@@ -10,10 +10,15 @@ export default {
                 inter: "Inter"
             },
             boxShadow: {
-                'default': '6px 6px 4px'
+                'default': '6px 6px 4px',
+                'input': '16px 16px rgba(0,0,0,0.25)'
             },
             colors: {
-                'default-red': '#FF1B1C'
+                'red': '#FF1B1C',
+                'yellow': '#FFCC00',
+                'purple': '#DFBAF2',
+                'green': '#9ED23B',
+                'gray': '#A4A4A4',
             },
             keyframes: {
                 bouncing: {

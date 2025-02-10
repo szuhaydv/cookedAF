@@ -1,10 +1,10 @@
 <script lang="ts">
-    let { ingredient, handleDelete } = $props();
+    let { ingredient, remove } = $props();
 </script>
 
 <span
-    class="flex gap-1 rounded-xl text-white px-4 py-1 bg-fuchsia-300 text-center h-max"
-    contenteditable="false"
+    class="flex gap-1 rounded-xl text-white px-4 py-1 bg-green text-center h-max"
 >
-    {ingredient} <button onclick={handleDelete}><b>×</b></button>
+    {ingredient}
+    <button onclick={remove}><b class="hover:text-red">×</b></button>
 </span>
