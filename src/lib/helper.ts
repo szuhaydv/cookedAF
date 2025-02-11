@@ -14,7 +14,8 @@ export function binSearchCont(target: string, validIngredients: any[]): string[]
     let right = validIngredients.length - 1;
     while (left <= right) {
         const mid = Math.floor((left + right) / 2);
-        const comparison = target.localeCompare(validIngredients[mid])
+        const comparison = target < validIngredients[mid].slice(0, target.length) ? -1 :
+            target > validIngredients[mid].slice(0, target.length) ? 1 : 0;
         const isStartingWith = validIngredients[mid].startsWith(target)
 
         if (isStartingWith) {
@@ -26,7 +27,7 @@ export function binSearchCont(target: string, validIngredients: any[]): string[]
                     break;
                 }
             }
-            for (let i = mid - 1; i > 0; i--) {
+            for (let i = mid - 1; i >= 0; i--) {
                 if (validIngredients[i].startsWith(target)) {
                     matches.push(validIngredients[i])
                 } else {
