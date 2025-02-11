@@ -1,3 +1,10 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
-@import 'tailwindcss/utilities'
+@import 'tailwindcss/utilities';
+
+@font-face {
+  font-family: "Cheese Bread";
+  src: url("/cheese_bread/Cheese Bread.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}

@@ -19,10 +19,12 @@
     }
   });
 
+  let selectedIngredient = $state(0);
+
   const baseStyle =
-    "py-1 relative text-left px-[10%] overflow-hidden text-ellipsis whitespace-nowrap w-full";
+    "py-1 relative text-left decoration-4 px-[10%] overflow-hidden text-ellipsis whitespace-nowrap w-full";
   const dividerStyle =
-    "py-1 relative text-left px-[10%] overflow-hidden text-ellipsis whitespace-nowrap w-full after:absolute content-'' after:bottom-0 after:h-[1px] after:w-[80%] after:left-[10%] after:bg-gray";
+    "py-1 relative text-left decoration-4 px-[10%] overflow-hidden text-ellipsis whitespace-nowrap w-full after:absolute content-'' after:bottom-0 after:h-[1px] after:w-[80%] after:left-[10%] after:bg-gray";
   let input: any;
   function handleFocus() {
     input.focus();
@@ -31,7 +33,11 @@
   function handleInput(e: any) {
     if (currentlyAdding.length >= 3) {
       inputPos = input.getBoundingClientRect();
+      const prevMatched = matchedIngredients.slice(0, 3);
       matchedIngredients = binSearchCont(currentlyAdding.trim(), allIngredients);
+      if (JSON.stringify(prevMatched) != JSON.stringify(matchedIngredients.slice(0, 3))) {
+        selectedIngredient = 0;
+      }
       showMatches = true;
 
       // handle possible selection
@@ -57,26 +63,56 @@
   }
 
   function handleKeydown(e: any) {
-    // handle delete
-    if (e.code === "Backspace") {
-      if (currentlyAdding === "") {
-        ingredientsAvailable.pop();
-      }
+    switch (e.code) {
+      // handle delete
+      case "Backspace":
+        if (currentlyAdding === "") {
+          ingredientsAvailable.pop();
+        }
+        break;
       // handle requested selection
-    } else if (e.code === "Enter") {
-      e.preventDefault();
-      if (matchedIngredients.length === 1) {
-        ingredientsAvailable.push(matchedIngredients[0]);
-        currentlyAdding = "";
-        matchedIngredients = [];
-      }
+      case "Enter":
+        e.preventDefault();
+        if (!ingredientsAvailable.includes(matchedIngredients[selectedIngredient])) {
+          ingredientsAvailable.push(matchedIngredients[selectedIngredient]);
+          currentlyAdding = "";
+          matchedIngredients = [];
+          selectedIngredient = 0;
+        }
+        break;
+      case "Tab":
+        e.preventDefault();
+        if (e.shiftKey) {
+          selectedIngredient -= 1;
+          if (selectedIngredient < 0) selectedIngredient = 2;
+        } else {
+          selectedIngredient += 1;
+          if (selectedIngredient > 2) selectedIngredient = 0;
+        }
+        break;
     }
   }
 
   const debouncedInput = debounce(handleInput, 100);
 </script>
 
-<main class="h-[calc(100dvh-4rem)] flex flex-col gap-6 items-center justify-center">
+<main class="h-[calc(100dvh-4rem)] flex flex-col gap-6 items-center justify-center relative">
+  <img
+    src="./images/broccoli.svg"
+    alt="broccoli"
+    class="absolute opacity-55 top-[25%] left-3/4 w-52 h-52"
+  />
+  <img
+    src="./images/steak.svg"
+    alt="steak"
+    class="absolute opacity-70 top-[10%] left-[10%] w-72 h-72 rotate-[20deg]"
+  />
+  <img
+    src="./images/eggs.svg"
+    alt="eggs"
+    class="absolute opacity-70 bottom-[10%] left-[15%] w-52 h-52 scale-x-[-1]"
+  />
+  <img src="./images/rice.svg" alt="rice" class="absolute opacity-70 bottom-0 left-3/4 w-52 h-52" />
   <h1 class="font-inter font-normal">
     <span class="line-through text-2xl italic text-slate-600">Looking for a recipe...</span><br
     /><span class="text-4xl">The next recipe is <b class="font-bold">looking for you!</b></span>
@@ -100,6 +136,7 @@
           class="focus:outline-none h-10 py-1"
           bind:innerText={currentlyAdding}
           bind:this={input}
+          class:text-red={currentlyAdding.length >= 3 && matchedIngredients.length === 0}
         ></span>
         <!-- onkeydown={debouncedInput} -->
       </div>
@@ -113,11 +150,23 @@
   {#if showMatches && matchedIngredients.length > 0 && inputPos}
     <ul
       style="top: {bubbleTop}; left: {bubbleLeft}"
-      class="bubble fixed border border-black rounded-lg w-48 text-gray text-lg pt-1 -translate-y-1/2 bg-white"
+      class="bubble drop-shadow-lg fixed border border-black rounded-lg w-48 text-gray text-lg pt-1 -translate-y-1/2 bg-white"
     >
       {#each matchedIngredients.slice(0, 3) as ingredient, index}
-        <li class={index !== matchedIngredients.slice(0, 3).length - 1 ? dividerStyle : baseStyle}>
+        <li
+          class:text-green={selectedIngredient === index}
+          class:font-bold={selectedIngredient === index}
+          class={index !== matchedIngredients.slice(0, 3).length - 1 ? dividerStyle : baseStyle}
+          class:line-through={ingredientsAvailable.includes(ingredient)}
+        >
           {ingredient}
+          {#if selectedIngredient === index && !ingredientsAvailable.includes(ingredient)}
+            <img
+              src="./images/enter.png"
+              alt="Enter button"
+              class="absolute left-[80%] top-1/2 -translate-y-1/2 bg-white"
+            />
+          {/if}
         </li>
       {/each}
       {#if matchedIngredients.length > 3}

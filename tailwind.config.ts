@@ -7,7 +7,9 @@ export default {
         extend: {
             fontFamily: {
                 lobster: "Lobster",
-                inter: "Inter"
+                inter: "Inter",
+                cheeseBread: "Cheese Bread",
+
             },
             boxShadow: {
                 'default': '6px 6px 4px',
@@ -19,6 +21,8 @@ export default {
                 'purple': '#DFBAF2',
                 'green': '#9ED23B',
                 'gray': '#A4A4A4',
+                'light-yellow': '#FFEEA8',
+                'light-gray': '#E7E7E7',
             },
             keyframes: {
                 bouncing: {
