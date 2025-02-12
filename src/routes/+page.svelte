@@ -1,12 +1,16 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import IngredientBubble from "$lib/components/IngredientBubble.svelte";
   import { binSearchCont, debounce } from "$lib/helper";
+  import { fridgeContents } from "$lib/searchStore";
   const ingredientsAvailable: string[] = $state([]);
   let currentlyAdding = $state("");
   let showMatches = $state(false);
   let { data } = $props();
   const allIngredients = data.ingredientData;
-  let matchedIngredients: string[] = $state([]);
+  let allMatchedIngredients: string[] = $state([]);
+  let sliceStart = $state(0);
+  const matchedIngredients = $derived(allMatchedIngredients.slice(sliceStart, sliceStart + 3));
   let inputPos: DOMRect | undefined = $state();
   const bubbleLeft = $derived.by(() => {
     if (inputPos) {
@@ -25,6 +29,7 @@
     "py-1 relative text-left decoration-4 px-[10%] overflow-hidden text-ellipsis whitespace-nowrap w-full";
   const dividerStyle =
     "py-1 relative text-left decoration-4 px-[10%] overflow-hidden text-ellipsis whitespace-nowrap w-full after:absolute content-'' after:bottom-0 after:h-[1px] after:w-[80%] after:left-[10%] after:bg-gray";
+
   let input: any;
   function handleFocus() {
     input.focus();
@@ -33,19 +38,19 @@
   function handleInput(e: any) {
     if (currentlyAdding.length >= 3) {
       inputPos = input.getBoundingClientRect();
-      const prevMatched = matchedIngredients.slice(0, 3);
-      matchedIngredients = binSearchCont(currentlyAdding.trim(), allIngredients);
-      if (JSON.stringify(prevMatched) != JSON.stringify(matchedIngredients.slice(0, 3))) {
+      const prevMatched = allMatchedIngredients.slice(0, 3);
+      allMatchedIngredients = binSearchCont(currentlyAdding.trim(), allIngredients);
+      if (JSON.stringify(prevMatched) != JSON.stringify(allMatchedIngredients.slice(0, 3))) {
         selectedIngredient = 0;
       }
       showMatches = true;
 
       // handle possible selection
       if (e.data === " ") {
-        if (matchedIngredients.length === 1) {
-          ingredientsAvailable.push(matchedIngredients[0]);
+        if (allMatchedIngredients.length === 1) {
+          ingredientsAvailable.push(allMatchedIngredients[0]);
           currentlyAdding = "";
-          matchedIngredients = [];
+          allMatchedIngredients = [];
         }
       }
 
@@ -73,24 +78,48 @@
       // handle requested selection
       case "Enter":
         e.preventDefault();
-        if (!ingredientsAvailable.includes(matchedIngredients[selectedIngredient])) {
-          ingredientsAvailable.push(matchedIngredients[selectedIngredient]);
+        const possibleEntry = matchedIngredients[selectedIngredient];
+        if (currentlyAdding.length >= 3 && !ingredientsAvailable.includes(possibleEntry)) {
+          ingredientsAvailable.push(possibleEntry);
           currentlyAdding = "";
-          matchedIngredients = [];
+          allMatchedIngredients = [];
           selectedIngredient = 0;
+          sliceStart = 0;
         }
         break;
       case "Tab":
         e.preventDefault();
         if (e.shiftKey) {
           selectedIngredient -= 1;
-          if (selectedIngredient < 0) selectedIngredient = 2;
+          if (selectedIngredient < 0) {
+            if (sliceStart !== 0) {
+              sliceStart -= 1;
+              selectedIngredient += 1;
+            } else {
+              selectedIngredient = Math.min(2, allMatchedIngredients.length - 1);
+              sliceStart = Math.max(0, allMatchedIngredients.length - 3);
+            }
+          }
         } else {
           selectedIngredient += 1;
-          if (selectedIngredient > 2) selectedIngredient = 0;
+          if (selectedIngredient > matchedIngredients.length - 1) {
+            if (sliceStart + 2 < allMatchedIngredients.length - 1) {
+              sliceStart += 1;
+              selectedIngredient -= 1;
+            } else {
+              sliceStart = 0;
+              selectedIngredient = 0;
+            }
+          }
         }
         break;
     }
+  }
+
+  function handleNavigation(e: any) {
+    e.preventDefault();
+    fridgeContents.set(ingredientsAvailable);
+    goto("/recipe");
   }
 
   const debouncedInput = debounce(handleInput, 100);
@@ -136,27 +165,33 @@
           class="focus:outline-none h-10 py-1"
           bind:innerText={currentlyAdding}
           bind:this={input}
-          class:text-red={currentlyAdding.length >= 3 && matchedIngredients.length === 0}
+          class:text-red={currentlyAdding.length >= 3 && allMatchedIngredients.length === 0}
         ></span>
         <!-- onkeydown={debouncedInput} -->
       </div>
     </div>
   </button>
   <a
+    onclick={handleNavigation}
     href="/recipe"
-    class="bg-red flex justify-center items-center rounded-2xl border-[3px] border-black w-48 h-16 text-white font-inter italic text-4xl shadow-default shadow-slate-500 active:animate-bouncing"
-    >Go!</a
+    class="bg-red flex justify-center items-center rounded-2xl border-[3px] border-black w-48 h-16
+    text-white font-cheeseBread italic text-4xl shadow-default
+    shadow-slate-500 active:animate-bouncing">Go!</a
   >
-  {#if showMatches && matchedIngredients.length > 0 && inputPos}
+  {#if showMatches && allMatchedIngredients.length > 0 && inputPos}
     <ul
       style="top: {bubbleTop}; left: {bubbleLeft}"
-      class="bubble drop-shadow-lg fixed border border-black rounded-lg w-48 text-gray text-lg pt-1 -translate-y-1/2 bg-white"
+      class="bubble drop-shadow-lg fixed border border-black rounded-lg w-48 text-gray text-lg pt-1
+            -translate-y-1/2 bg-white"
     >
-      {#each matchedIngredients.slice(0, 3) as ingredient, index}
+      {#each allMatchedIngredients.slice(sliceStart, sliceStart + 3) as ingredient, index}
         <li
           class:text-green={selectedIngredient === index}
           class:font-bold={selectedIngredient === index}
-          class={index !== matchedIngredients.slice(0, 3).length - 1 ? dividerStyle : baseStyle}
+          class={index === matchedIngredients.length - 1 &&
+          (allMatchedIngredients.length <= 3 || sliceStart === allMatchedIngredients.length - 3)
+            ? baseStyle
+            : dividerStyle}
           class:line-through={ingredientsAvailable.includes(ingredient)}
         >
           {ingredient}
@@ -164,14 +199,14 @@
             <img
               src="./images/enter.png"
               alt="Enter button"
-              class="absolute left-[80%] top-1/2 -translate-y-1/2 bg-white"
+              class="absolute right-2 top-1/2 -translate-y-1/2 bg-white"
             />
           {/if}
         </li>
       {/each}
-      {#if matchedIngredients.length > 3}
+      {#if allMatchedIngredients.length > 3 && allMatchedIngredients.length - 3 !== sliceStart}
         <li class="py-1 text-sm text-center">
-          +<b>{matchedIngredients.length - 3}</b> more
+          +<b>{allMatchedIngredients.length - (sliceStart + 3)}</b> more
         </li>
       {/if}
     </ul>
