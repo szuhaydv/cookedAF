@@ -8,9 +8,39 @@
   let showMatches = $state(false);
   let { data } = $props();
   const allIngredients = data.ingredientData;
-  let allMatchedIngredients: string[] = $state([]);
+  let allMatchedIngredients: Ingredient[] = $state([]);
   let sliceStart = $state(0);
-  const matchedIngredients = $derived(allMatchedIngredients.slice(sliceStart, sliceStart + 3));
+
+  function checkTruncation(e: HTMLLIElement) {
+    const clone = e.cloneNode(true) as HTMLLIElement;
+
+    clone.style.position = "absolute";
+    clone.style.visibility = "hidden";
+    clone.style.width = "max-content";
+    clone.style.whiteSpace = "nowrap";
+
+    const textBubble = document.getElementsByClassName("bubble")[0];
+    textBubble.appendChild(clone);
+
+    const originalWidth = e.offsetWidth;
+    const cloneWidth = clone.offsetWidth;
+
+    textBubble.removeChild(clone);
+
+    if (cloneWidth > originalWidth) {
+      e.style.textDecoration = "underline dotted";
+    }
+  }
+
+  interface Ingredient {
+    value: string;
+    element: null | HTMLLIElement;
+  }
+
+  const matchedIngredients: Ingredient[] = $derived(
+    allMatchedIngredients.slice(sliceStart, sliceStart + 3),
+  );
+
   let inputPos: DOMRect | undefined = $state();
   const bubbleLeft = $derived.by(() => {
     if (inputPos) {
@@ -22,7 +52,6 @@
       return inputPos.y + inputPos.height / 2 + "px";
     }
   });
-
   let selectedIngredient = $state(0);
 
   const baseStyle =
@@ -39,7 +68,12 @@
     if (currentlyAdding.length >= 3) {
       inputPos = input.getBoundingClientRect();
       const prevMatched = allMatchedIngredients.slice(0, 3);
-      allMatchedIngredients = binSearchCont(currentlyAdding.trim(), allIngredients);
+      allMatchedIngredients = binSearchCont(currentlyAdding.trim(), allIngredients).map((el) => {
+        return {
+          value: el,
+          element: null,
+        };
+      });
       if (JSON.stringify(prevMatched) != JSON.stringify(allMatchedIngredients.slice(0, 3))) {
         selectedIngredient = 0;
       }
@@ -48,7 +82,7 @@
       // handle possible selection
       if (e.data === " ") {
         if (allMatchedIngredients.length === 1) {
-          ingredientsAvailable.push(allMatchedIngredients[0]);
+          ingredientsAvailable.push(allMatchedIngredients[0].value);
           currentlyAdding = "";
           allMatchedIngredients = [];
         }
@@ -78,7 +112,7 @@
       // handle requested selection
       case "Enter":
         e.preventDefault();
-        const possibleEntry = matchedIngredients[selectedIngredient];
+        const possibleEntry = matchedIngredients[selectedIngredient].value;
         if (currentlyAdding.length >= 3 && !ingredientsAvailable.includes(possibleEntry)) {
           ingredientsAvailable.push(possibleEntry);
           currentlyAdding = "";
@@ -148,7 +182,7 @@
   </h1>
   <button
     class="bg-white text-2xl rounded-3xl h-48 overflow-hidden
-        w-[40rem] pl-8 pr-4 shadow-input border-8 border-black"
+w-[40rem] pl-8 pr-4 shadow-input border-8 border-black"
     onclick={handleFocus}
   >
     <div class="w-full h-full py-8 overflow-x-hidden overflow-y-auto flex flex-wrap gap-2">
@@ -175,16 +209,16 @@
     onclick={handleNavigation}
     href="/recipe"
     class="bg-red flex justify-center items-center rounded-2xl border-[3px] border-black w-48 h-16
-    text-white font-cheeseBread italic text-4xl shadow-default
-    shadow-slate-500 active:animate-bouncing">Go!</a
+text-white font-cheeseBread italic text-4xl shadow-default
+shadow-slate-500 active:animate-bouncing">Go!</a
   >
   {#if showMatches && allMatchedIngredients.length > 0 && inputPos}
     <ul
       style="top: {bubbleTop}; left: {bubbleLeft}"
       class="bubble drop-shadow-lg fixed border border-black rounded-lg w-48 text-gray text-lg pt-1
-            -translate-y-1/2 bg-white"
+-translate-y-1/2 bg-white"
     >
-      {#each allMatchedIngredients.slice(sliceStart, sliceStart + 3) as ingredient, index}
+      {#each matchedIngredients as ingredient, index (ingredient.value)}
         <li
           class:text-green={selectedIngredient === index}
           class:font-bold={selectedIngredient === index}
@@ -192,10 +226,11 @@
           (allMatchedIngredients.length <= 3 || sliceStart === allMatchedIngredients.length - 3)
             ? baseStyle
             : dividerStyle}
-          class:line-through={ingredientsAvailable.includes(ingredient)}
+          class:line-through={ingredientsAvailable.includes(ingredient.value)}
+          use:checkTruncation
         >
-          {ingredient}
-          {#if selectedIngredient === index && !ingredientsAvailable.includes(ingredient)}
+          {ingredient.value}
+          {#if selectedIngredient === index && !ingredientsAvailable.includes(ingredient.value)}
             <img
               src="./images/enter.png"
               alt="Enter button"
