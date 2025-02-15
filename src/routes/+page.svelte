@@ -11,7 +11,21 @@
   let allMatchedIngredients: Ingredient[] = $state([]);
   let sliceStart = $state(0);
 
-  function checkTruncation(e: HTMLLIElement) {
+  function handleShouldScroll(index: number) {
+    const currentIngredient = allMatchedIngredients[sliceStart + index];
+    if (currentIngredient.isScrollable) {
+      currentIngredient.isScrolling = true;
+    }
+  }
+
+  function handleShouldStopScroll(e: MouseEvent, index: number) {
+    const currentIngredient = allMatchedIngredients[sliceStart + index];
+    if (currentIngredient.isScrolling) {
+      currentIngredient.isScrolling = false;
+    }
+  }
+
+  function checkTruncation(e: HTMLLIElement, index: number) {
     const clone = e.cloneNode(true) as HTMLLIElement;
 
     clone.style.position = "absolute";
@@ -29,12 +43,15 @@
 
     if (cloneWidth > originalWidth) {
       e.style.textDecoration = "underline dotted";
+      allMatchedIngredients[sliceStart + index].isScrollable = true;
     }
   }
 
   interface Ingredient {
     value: string;
     element: null | HTMLLIElement;
+    isScrollable: boolean;
+    isScrolling: boolean;
   }
 
   const matchedIngredients: Ingredient[] = $derived(
@@ -55,9 +72,9 @@
   let selectedIngredient = $state(0);
 
   const baseStyle =
-    "py-1 relative text-left decoration-4 px-[10%] overflow-hidden text-ellipsis whitespace-nowrap w-full";
+    "flex py-1 relative text-left decoration-4 px-[10%] overflow-hidden whitespace-nowrap w-full";
   const dividerStyle =
-    "py-1 relative text-left decoration-4 px-[10%] overflow-hidden text-ellipsis whitespace-nowrap w-full after:absolute content-'' after:bottom-0 after:h-[1px] after:w-[80%] after:left-[10%] after:bg-gray";
+    "flex py-1 relative text-left decoration-4 px-[10%] overflow-hidden whitespace-nowrap w-full after:absolute content-'' after:bottom-0 after:h-[1px] after:w-[80%] after:left-[10%] after:bg-gray";
 
   let input: any;
   function handleFocus() {
@@ -72,6 +89,8 @@
         return {
           value: el,
           element: null,
+          isScrollable: false,
+          isScrolling: false,
         };
       });
       if (JSON.stringify(prevMatched) != JSON.stringify(allMatchedIngredients.slice(0, 3))) {
@@ -227,9 +246,18 @@ shadow-slate-500 active:animate-bouncing">Go!</a
             ? baseStyle
             : dividerStyle}
           class:line-through={ingredientsAvailable.includes(ingredient.value)}
-          use:checkTruncation
+          class:text-ellipsis={!ingredient.isScrolling}
+          use:checkTruncation={index}
+          onmouseleave={(e) => handleShouldStopScroll(e, index)}
         >
-          {ingredient.value}
+          <span
+            class="inline-block"
+            class:marquee={ingredient.isScrolling}
+            onmouseenter={() => handleShouldScroll(index)}>{ingredient.value}</span
+          >
+          {#if ingredient.isScrolling}
+            <span class="inline-block marquee">{ingredient.value}</span>
+          {/if}
           {#if selectedIngredient === index && !ingredientsAvailable.includes(ingredient.value)}
             <img
               src="./images/enter.png"
@@ -260,5 +288,25 @@ shadow-slate-500 active:animate-bouncing">Go!</a
     border-left: 1px solid #000;
     border-top: 1px solid #000;
     transform: translateY(-50%) rotate(-45deg);
+  }
+
+  .marquee {
+    animation: marquee 5s linear infinite;
+    animation-delay: 0s;
+  }
+
+  @keyframes marquee {
+    0% {
+      transform: translate(0%, 0);
+    }
+    50% {
+      transform: translate(-112.5%, 0);
+    }
+    50.1% {
+      transform: translate(-12.5%, 0);
+    }
+    100% {
+      transform: translate(-112.5%, 0);
+    }
   }
 </style>
